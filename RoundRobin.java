@@ -10,6 +10,11 @@ class Proceso implements Runnable {
     int prioridad;
     int tiempoES;
     int tiempoLlegada;
+    int tiempoInicio; // Nuevo: para calcular tiempo de respuesta
+    int tiempoFinalizacion; // Nuevo: para calcular tiempo de ejecución
+    int tiempoEspera; // Nuevo: para calcular tiempo de espera total
+
+
 
     public Proceso(String id, String nombre, int tamano, int tiempoEjecucion, int prioridad, int tiempoES, int tiempoLlegada) {
         this.id = id;
@@ -19,6 +24,8 @@ class Proceso implements Runnable {
         this.prioridad = prioridad;
         this.tiempoES = tiempoES;
         this.tiempoLlegada = tiempoLlegada;
+        this.tiempoInicio = -1;  // Inicialmente no ha empezado
+        this.tiempoEspera = 0;   // El tiempo de espera empieza en 0
     }
 
     @Override
@@ -148,31 +155,62 @@ public class RoundRobin {
     }
 
     public static void correrSimulacionConCola(Queue<Proceso> colaListos) {
-        // Simular el Round Robin con los procesos en la cola de listos
+        int tiempoActual = 0; // Reloj global para la simulación
+        int totalEspera = 0;
+        int totalEjecucion = 0;
+        int totalRespuesta = 0;
+        int numProcesos = colaListos.size();
+    
         while (!colaListos.isEmpty()) {
             Proceso procesoActual = colaListos.poll();
-
+    
+            // Si es la primera vez que se ejecuta, registrar el tiempo de respuesta
+            if (procesoActual.tiempoInicio == -1) {
+                procesoActual.tiempoInicio = tiempoActual;  // Tiempo en que empezó a ejecutarse
+                int tiempoRespuesta = procesoActual.tiempoInicio - procesoActual.tiempoLlegada;
+                totalRespuesta += tiempoRespuesta;
+            }
+    
             // Simulamos la ejecución por el tiempo de quantum
             try {
                 int tiempoEjecutado = Math.min(quantum, procesoActual.tiempoEjecucion);
                 Thread.sleep(tiempoEjecutado * 1000);  // Simulamos la ejecución por el tiempo calculado
                 procesoActual.tiempoEjecucion -= tiempoEjecutado;  // Reducimos el tiempo de ejecución restante
-
+                tiempoActual += tiempoEjecutado;  // Avanzar el tiempo global de la simulación
+    
                 // Verificar si el proceso terminó
                 if (procesoActual.tiempoEjecucion > 0) {
+                    // El proceso no terminó, acumular tiempo de espera y devolverlo a la cola
+                    procesoActual.tiempoEspera += (tiempoActual - procesoActual.tiempoInicio); // El tiempo que estuvo esperando
                     System.out.println("Proceso " + procesoActual.nombre + " no terminó, regresando a la cola con " + procesoActual.tiempoEjecucion + " segundos restantes.");
                     colaListos.offer(procesoActual);  // Reinsertar el proceso al final de la cola
                 } else {
-                    System.out.println("Proceso " + procesoActual.nombre + " completado.");
+                    // El proceso terminó
+                    procesoActual.tiempoFinalizacion = tiempoActual;  // Registrar tiempo de finalización
+                    int tiempoEjecucion = procesoActual.tiempoFinalizacion - procesoActual.tiempoLlegada;
+                    totalEjecucion += tiempoEjecucion;
+    
+                    System.out.println("Proceso " + procesoActual.nombre + " completado. Tiempo de ejecución total: " + tiempoEjecucion + " segundos. Liberando " + procesoActual.tamano + " unidades de memoria.");
+                    memoriaDisponible += procesoActual.tamano;  // Liberar la memoria ocupada por el proceso
                 }
             } catch (InterruptedException e) {
                 System.out.println("Interrupción durante la ejecución del proceso.");
             }
         }
-
+    
         System.out.println("Todos los procesos han sido completados.");
+    
+        // Calcular y mostrar los promedios
+        double promedioEspera = (double) totalEspera / numProcesos;
+        double promedioEjecucion = (double) totalEjecucion / numProcesos;
+        double promedioRespuesta = (double) totalRespuesta / numProcesos;
+    
+        System.out.println("\n--- Promedios ---");
+        System.out.println("Tiempo promedio de espera: " + promedioEspera + " segundos.");
+        System.out.println("Tiempo promedio de ejecución: " + promedioEjecucion + " segundos.");
+        System.out.println("Tiempo promedio de respuesta: " + promedioRespuesta + " segundos.");
     }
-
+    
     // Métodos para generar valores automáticos
     public static String generarId() {
         return String.valueOf(contadorId++);
