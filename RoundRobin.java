@@ -126,7 +126,7 @@ public class RoundRobin {
                         
                     }
 
-                    correrSimulacionConCola(colaListosManual);
+                    roundrobin(colaListosManual);
                     break;
 
                 case 3:
@@ -157,10 +157,10 @@ public class RoundRobin {
         colaListos.add(p3);
 
         // Ejecutar la simulación con los procesos predefinidos
-        correrSimulacionConCola(colaListos);
+        roundrobin(colaListos);
     }
 
-    public static void correrSimulacionConCola(Queue<Proceso> colaListos) {
+    public static void roundrobin(Queue<Proceso> colaListos) {
         int tiempoActual = 0; // Reloj global para la simulación
         int totalEspera = 0;
         int totalEjecucion = 0;
