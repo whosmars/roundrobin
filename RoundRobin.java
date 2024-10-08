@@ -42,6 +42,9 @@ class Proceso implements Runnable {
 }
 
 public class RoundRobin {
+    private static int memoriaMaxima = 1024;  // Capacidad máxima de memoria en KB
+    private static int memoriaDisponible = memoriaMaxima;  // Memoria disponible
+
     private static int quantum = 2;  // Quantum inicial de 2 segundos
     private static int contadorId = 1;  // Contador para IDs únicos de procesos
 
@@ -79,13 +82,35 @@ public class RoundRobin {
                         System.out.print("Ingrese el tiempo de ejecución (ráfaga) del proceso: ");
                         int tiempoEjecucion = scanner.nextInt();
 
-                        // Crear proceso con los atributos manuales y el resto generados automáticamente
-                        Proceso procesoManual = new Proceso(id, nombre, generarTamano(), tiempoEjecucion, generarPrioridad(), generarTiempoES(), generarTiempoLlegada());
-                        colaListosManual.add(procesoManual);
 
-                        System.out.print("¿Desea agregar otro proceso? (s/n): ");
-                        char respuesta = scanner.next().charAt(0);
-                        agregarOtro = respuesta == 's' || respuesta == 'S';
+
+
+
+                        System.out.print("Ingrese el tamaño del proceso (KB): ");
+                        int tamanoProceso = scanner.nextInt();
+
+                        if (tamanoProceso <= memoriaDisponible) {
+                            // Crear proceso si hay suficiente memoria disponible
+                            Proceso procesoManual = new Proceso(id, nombre, tamanoProceso, tiempoEjecucion, generarPrioridad(), generarTiempoES(), generarTiempoLlegada());
+                            colaListosManual.add(procesoManual);
+                            memoriaDisponible -= tamanoProceso;  // Restar el tamaño del proceso de la memoria disponible
+                            System.out.println("Subió el proceso " + nombre + " y restan " + memoriaDisponible + " unidades de memoria.");
+                            System.out.print("¿Desea agregar otro proceso? (s/n): ");
+                            char respuesta = scanner.next().charAt(0);
+                            agregarOtro = respuesta == 's' || respuesta == 'S';
+                        } else {
+                            System.out.println("No hay suficiente memoria disponible para el proceso ");
+                            agregarOtro = false;
+                        }
+
+
+
+
+
+                        // Crear proceso con los atributos manuales y el resto generados automáticamente
+                        
+
+                        
                     }
 
                     correrSimulacionConCola(colaListosManual);
