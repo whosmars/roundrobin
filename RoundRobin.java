@@ -24,10 +24,10 @@ class Proceso implements Runnable {
     @Override
     public void run() {
         try {
-            System.out.println("Proceso " + nombre + " en ejecución...");
             while (tiempoEjecucion > 0) {
-                Thread.sleep(1000); // Simulamos un segundo de ejecución
-                tiempoEjecucion--;  // Reducimos el tiempo de ejecución
+                // Simular un quantum de ejecución de 1 segundo
+                Thread.sleep(1000); 
+                tiempoEjecucion--; // Reducir el tiempo de ejecución
                 System.out.println("Proceso " + nombre + " ejecutándose. Tiempo restante: " + tiempoEjecucion);
             }
             System.out.println("Proceso " + nombre + " completado.");
@@ -43,6 +43,7 @@ class Proceso implements Runnable {
 
 public class RoundRobin {
     private static int quantum = 2;  // Quantum inicial de 2 segundos
+    private static int contadorId = 1;  // Contador para IDs únicos de procesos
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -64,7 +65,7 @@ public class RoundRobin {
                     break;
 
                 case 2:
-                    // Añadir procesos manualmente
+                    // Añadir procesos manualmente solo con quantum y ráfaga
                     System.out.print("Ingrese el quantum para los procesos: ");
                     quantum = scanner.nextInt();
 
@@ -72,17 +73,14 @@ public class RoundRobin {
                     boolean agregarOtro = true;
 
                     while (agregarOtro) {
-                        System.out.print("Ingrese el ID del proceso: ");
-                        String id = scanner.next();
-
-                        System.out.print("Ingrese el nombre del proceso: ");
-                        String nombre = scanner.next();
+                        String id = generarId();
+                        String nombre = generarNombre();
 
                         System.out.print("Ingrese el tiempo de ejecución (ráfaga) del proceso: ");
                         int tiempoEjecucion = scanner.nextInt();
 
-                        // Creamos un proceso con los atributos dados (el resto se pone a 0 o valores arbitrarios)
-                        Proceso procesoManual = new Proceso(id, nombre, 0, tiempoEjecucion, 0, 0, 0);
+                        // Crear proceso con los atributos manuales y el resto generados automáticamente
+                        Proceso procesoManual = new Proceso(id, nombre, generarTamano(), tiempoEjecucion, generarPrioridad(), generarTiempoES(), generarTiempoLlegada());
                         colaListosManual.add(procesoManual);
 
                         System.out.print("¿Desea agregar otro proceso? (s/n): ");
@@ -111,9 +109,9 @@ public class RoundRobin {
         Queue<Proceso> colaListos = new LinkedList<>();
 
         // Crear procesos predefinidos
-        Proceso p1 = new Proceso("1", "P1", 100, 5, 1, 2, 0);
-        Proceso p2 = new Proceso("2", "P2", 200, 3, 2, 1, 1);
-        Proceso p3 = new Proceso("3", "P3", 150, 7, 3, 3, 2);
+        Proceso p1 = new Proceso(generarId(), generarNombre(), generarTamano(), 5, generarPrioridad(), generarTiempoES(), generarTiempoLlegada());
+        Proceso p2 = new Proceso(generarId(), generarNombre(), generarTamano(), 3, generarPrioridad(), generarTiempoES(), generarTiempoLlegada());
+        Proceso p3 = new Proceso(generarId(), generarNombre(), generarTamano(), 7, generarPrioridad(), generarTiempoES(), generarTiempoLlegada());
 
         // Añadir procesos a la cola de listos
         colaListos.add(p1);
@@ -129,28 +127,49 @@ public class RoundRobin {
         while (!colaListos.isEmpty()) {
             Proceso procesoActual = colaListos.poll();
 
-            Thread hiloProceso = new Thread(procesoActual);
-            hiloProceso.start();
-
+            // Simulamos la ejecución por el tiempo de quantum
             try {
-                // Ejecutar el proceso por el tiempo de quantum o hasta que termine
-                int tiempoEjecucion = Math.min(quantum, procesoActual.tiempoEjecucion);
-                Thread.sleep(tiempoEjecucion * 1000);
+                int tiempoEjecutado = Math.min(quantum, procesoActual.tiempoEjecucion);
+                Thread.sleep(tiempoEjecutado * 1000);  // Simulamos la ejecución por el tiempo calculado
+                procesoActual.tiempoEjecucion -= tiempoEjecutado;  // Reducimos el tiempo de ejecución restante
 
                 // Verificar si el proceso terminó
-                if (procesoActual.tiempoEjecucion > quantum) {
-                    System.out.println("Proceso " + procesoActual.nombre + " no terminó, regresando a la cola.");
-                    colaListos.add(procesoActual);
+                if (procesoActual.tiempoEjecucion > 0) {
+                    System.out.println("Proceso " + procesoActual.nombre + " no terminó, regresando a la cola con " + procesoActual.tiempoEjecucion + " segundos restantes.");
+                    colaListos.offer(procesoActual);  // Reinsertar el proceso al final de la cola
                 } else {
-                    System.out.println("Proceso " + procesoActual.nombre + " finalizó.");
+                    System.out.println("Proceso " + procesoActual.nombre + " completado.");
                 }
-
-                hiloProceso.join(); // Esperar a que termine el hilo
             } catch (InterruptedException e) {
                 System.out.println("Interrupción durante la ejecución del proceso.");
             }
         }
 
         System.out.println("Todos los procesos han sido completados.");
+    }
+
+    // Métodos para generar valores automáticos
+    public static String generarId() {
+        return String.valueOf(contadorId++);
+    }
+
+    public static String generarNombre() {
+        return "P" + (contadorId - 1);
+    }
+
+    public static int generarTamano() {
+        return (int) (Math.random() * 500 + 100); // Tamaño aleatorio entre 100 y 600
+    }
+
+    public static int generarPrioridad() {
+        return (int) (Math.random() * 5 + 1); // Prioridad aleatoria entre 1 y 5
+    }
+
+    public static int generarTiempoES() {
+        return (int) (Math.random() * 5); // Tiempo E/S aleatorio entre 0 y 5
+    }
+
+    public static int generarTiempoLlegada() {
+        return (int) (Math.random() * 10); // Tiempo de llegada aleatorio entre 0 y 10
     }
 }
