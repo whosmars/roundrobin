@@ -1,3 +1,9 @@
+//hola amor buenas noches, este codigo ya funciona maso menos, lo unico que hace es lit seguir las instrucciones
+//los problemas principales es que la funcion principal run() y rr() funcionan con dos sleep, haciendo que no sean independientes y les falte estructura
+//otro problema es que solo se usa una list en vez de 2, por lo que hay cosas que pide el profe que no estan bien implementadas
+//la estructura de proceso me parece correcta asi como el menu si no quieres hacer el javax
+
+
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Scanner;
